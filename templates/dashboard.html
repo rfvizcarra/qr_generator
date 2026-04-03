@@ -40,32 +40,91 @@
     <!-- Generator card -->
     <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
       <h2 class="text-base font-semibold text-gray-800 mb-4">Generate a New QR Code</h2>
-      <div class="flex flex-col sm:flex-row gap-3">
-        <input id="urlInput" type="text" value="https://"
-               class="flex-1 border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
-               placeholder="https://example.com"
-               onkeydown="if(event.key==='Enter') generateQR()" />
-        <button onclick="generateQR()" id="generateBtn"
-                class="bg-indigo-600 text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-indigo-700 active:scale-95 transition flex items-center gap-2 justify-center">
+
+      <!-- Tabs -->
+      <div class="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit mb-6">
+        <button id="tabUrl" onclick="switchTab('url')"
+                class="px-4 py-2 rounded-lg text-sm font-medium transition bg-white text-indigo-700 shadow-sm">
+          URL
+        </button>
+        <button id="tabWifi" onclick="switchTab('wifi')"
+                class="px-4 py-2 rounded-lg text-sm font-medium transition text-gray-500 hover:text-gray-700">
+          WiFi Network
+        </button>
+      </div>
+
+      <!-- URL form -->
+      <div id="formUrl">
+        <div class="flex flex-col sm:flex-row gap-3">
+          <input id="urlInput" type="text" value="https://"
+                 class="flex-1 border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                 placeholder="https://example.com"
+                 onkeydown="if(event.key==='Enter') generateUrlQR()" />
+          <button onclick="generateUrlQR()" id="generateBtn"
+                  class="bg-indigo-600 text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-indigo-700 active:scale-95 transition flex items-center gap-2 justify-center">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+            </svg>
+            Generate &amp; Save
+          </button>
+        </div>
+        <p id="urlError" class="text-red-500 text-xs mt-2 hidden"></p>
+      </div>
+
+      <!-- WiFi form -->
+      <div id="formWifi" class="hidden">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Network Name (SSID) <span class="text-red-400">*</span></label>
+            <input id="wifiSsid" type="text"
+                   class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                   placeholder="MyHomeNetwork" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Password</label>
+            <input id="wifiPassword" type="text"
+                   class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                   placeholder="Leave blank for open networks" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Security Type</label>
+            <select id="wifiAuth"
+                    class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-white"
+                    onchange="togglePasswordField()">
+              <option value="WPA">WPA / WPA2 / WPA3</option>
+              <option value="WEP">WEP</option>
+              <option value="nopass">None (open network)</option>
+            </select>
+          </div>
+          <div class="flex items-end pb-3">
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-600 select-none">
+              <input id="wifiHidden" type="checkbox" class="w-4 h-4 accent-indigo-600" />
+              Hidden network (SSID not broadcast)
+            </label>
+          </div>
+        </div>
+        <p id="wifiError" class="text-red-500 text-xs mt-2 hidden"></p>
+        <button onclick="generateWifiQR()" id="generateWifiBtn"
+                class="mt-4 bg-indigo-600 text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-indigo-700 active:scale-95 transition flex items-center gap-2">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+              d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
           </svg>
           Generate &amp; Save
         </button>
       </div>
-      <p id="urlError" class="text-red-500 text-xs mt-2 hidden"></p>
 
-      <!-- Result -->
+      <!-- Shared result -->
       <div id="result" class="hidden mt-8 flex flex-col sm:flex-row gap-8 items-center">
         <div class="flex-shrink-0">
           <img id="qrImage" src="" alt="QR Code"
                class="w-48 h-48 rounded-xl border border-gray-200 shadow-sm" />
         </div>
         <div class="flex flex-col gap-3 flex-1">
-          <div class="bg-gray-50 rounded-lg px-4 py-3 text-sm text-gray-700 break-all" id="displayUrl"></div>
+          <div class="bg-gray-50 rounded-lg px-4 py-3 text-sm text-gray-700 break-all" id="displayLabel"></div>
           <div class="flex gap-3 flex-wrap">
-            <button onclick="copyUrl()"
+            <button id="copyResultBtn" onclick="copyResult()"
                     class="flex items-center gap-2 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-50 transition">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -96,20 +155,33 @@
       {% if qr_codes %}
       <div id="historyGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {% for qr in qr_codes %}
+        {% set is_wifi = qr.target_url.startswith('WIFI:') %}
+        {% if is_wifi %}
+          {% set ssid = qr.target_url.split('S:')[1].split(';')[0] if 'S:' in qr.target_url else 'WiFi Network' %}
+        {% endif %}
         <div class="bg-white border border-gray-200 rounded-2xl p-5 flex gap-4 items-start hover:shadow-md transition">
           <img src="{{ qr.image_url }}" alt="QR"
                class="w-16 h-16 rounded-lg border border-gray-100 flex-shrink-0 cursor-pointer"
                onclick="window.open('{{ qr.image_url }}', '_blank')" />
           <div class="flex-1 min-w-0">
+            {% if is_wifi %}
+            <div class="flex items-center gap-1.5 mb-0.5">
+              <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">WiFi</span>
+            </div>
+            <p class="text-sm text-gray-800 font-medium truncate" title="{{ ssid }}">{{ ssid }}</p>
+            {% else %}
             <p class="text-sm text-gray-800 font-medium truncate" title="{{ qr.target_url }}">{{ qr.target_url }}</p>
+            {% endif %}
             <p class="text-xs text-gray-400 mt-0.5">
               {{ qr.created_at[:10] if qr.created_at else '' }}
             </p>
             <div class="flex gap-2 mt-3">
+              {% if not is_wifi %}
               <button onclick="copyText('{{ qr.target_url }}', this)"
                       class="text-xs border border-gray-200 px-2 py-1 rounded-md text-gray-600 hover:bg-gray-50 transition">
                 Copy URL
               </button>
+              {% endif %}
               <a href="{{ qr.image_url }}" download="{{ qr.file_name }}"
                  class="text-xs border border-indigo-200 px-2 py-1 rounded-md text-indigo-600 hover:bg-indigo-50 transition">
                 Download
@@ -190,14 +262,53 @@
 
   <script>
     let currentQrDataUrl = null;
-    let currentUrl = null;
+    let currentResultValue = null;
+    let currentFileName = null;
+    let activeTab = 'url';
 
-    async function generateQR() {
-      const urlInput = document.getElementById('urlInput');
-      const url = urlInput.value.trim();
+    // ── Tab switching ─────────────────────────────────────────────────────────
+
+    function switchTab(tab) {
+      activeTab = tab;
+      document.getElementById('result').classList.add('hidden');
+
+      const tabUrl = document.getElementById('tabUrl');
+      const tabWifi = document.getElementById('tabWifi');
+      const formUrl = document.getElementById('formUrl');
+      const formWifi = document.getElementById('formWifi');
+
+      if (tab === 'url') {
+        tabUrl.className = 'px-4 py-2 rounded-lg text-sm font-medium transition bg-white text-indigo-700 shadow-sm';
+        tabWifi.className = 'px-4 py-2 rounded-lg text-sm font-medium transition text-gray-500 hover:text-gray-700';
+        formUrl.classList.remove('hidden');
+        formWifi.classList.add('hidden');
+      } else {
+        tabWifi.className = 'px-4 py-2 rounded-lg text-sm font-medium transition bg-white text-indigo-700 shadow-sm';
+        tabUrl.className = 'px-4 py-2 rounded-lg text-sm font-medium transition text-gray-500 hover:text-gray-700';
+        formWifi.classList.remove('hidden');
+        formUrl.classList.add('hidden');
+      }
+    }
+
+    function togglePasswordField() {
+      const auth = document.getElementById('wifiAuth').value;
+      const pwdInput = document.getElementById('wifiPassword');
+      pwdInput.disabled = auth === 'nopass';
+      if (auth === 'nopass') {
+        pwdInput.value = '';
+        pwdInput.classList.add('opacity-40');
+      } else {
+        pwdInput.classList.remove('opacity-40');
+      }
+    }
+
+    // ── URL QR ────────────────────────────────────────────────────────────────
+
+    async function generateUrlQR() {
+      const url = document.getElementById('urlInput').value.trim();
       const errorEl = document.getElementById('urlError');
 
-      if (!url || url === 'http://') {
+      if (!url || url === 'https://') {
         errorEl.textContent = 'Please enter a valid URL.';
         errorEl.classList.remove('hidden');
         return;
@@ -217,15 +328,8 @@
         if (!resp.ok) throw new Error((await resp.json()).detail || 'Error');
         const data = await resp.json();
 
-        currentUrl = url;
-        currentQrDataUrl = 'data:image/png;base64,' + data.image;
-
-        document.getElementById('qrImage').src = currentQrDataUrl;
-        document.getElementById('displayUrl').textContent = url;
-        document.getElementById('result').classList.remove('hidden');
-
-        // Prepend new card to history grid
-        addToHistoryGrid(data);
+        showResult(data, url, false);
+        addToHistoryGrid(data, false);
       } catch (err) {
         errorEl.textContent = err.message;
         errorEl.classList.remove('hidden');
@@ -240,10 +344,76 @@
       }
     }
 
-    function addToHistoryGrid(data) {
+    // ── WiFi QR ───────────────────────────────────────────────────────────────
+
+    async function generateWifiQR() {
+      const ssid = document.getElementById('wifiSsid').value.trim();
+      const password = document.getElementById('wifiPassword').value.trim();
+      const auth = document.getElementById('wifiAuth').value;
+      const hidden = document.getElementById('wifiHidden').checked;
+      const errorEl = document.getElementById('wifiError');
+
+      if (!ssid) {
+        errorEl.textContent = 'Network name (SSID) is required.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+      errorEl.classList.add('hidden');
+
+      const btn = document.getElementById('generateWifiBtn');
+      btn.disabled = true;
+      btn.textContent = 'Generating...';
+
+      try {
+        const resp = await fetch('/api/generate/wifi', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ssid, password, auth, hidden }),
+        });
+        if (!resp.ok) throw new Error((await resp.json()).detail || 'Error');
+        const data = await resp.json();
+
+        showResult(data, ssid, true);
+        addToHistoryGrid(data, true);
+      } catch (err) {
+        errorEl.textContent = err.message;
+        errorEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
+          </svg>
+          Generate &amp; Save`;
+      }
+    }
+
+    // ── Shared result display ─────────────────────────────────────────────────
+
+    function showResult(data, label, isWifi) {
+      currentQrDataUrl = 'data:image/png;base64,' + data.image;
+      currentResultValue = isWifi ? null : label;
+      currentFileName = data.file_name;
+
+      document.getElementById('qrImage').src = currentQrDataUrl;
+      document.getElementById('displayLabel').textContent = isWifi ? `WiFi Network: ${label}` : label;
+
+      const copyBtn = document.getElementById('copyResultBtn');
+      const copyText = document.getElementById('copyBtnText');
+      if (isWifi) {
+        copyBtn.classList.add('hidden');
+      } else {
+        copyBtn.classList.remove('hidden');
+        copyText.textContent = 'Copy URL';
+      }
+
+      document.getElementById('result').classList.remove('hidden');
+    }
+
+    function addToHistoryGrid(data, isWifi) {
       let grid = document.getElementById('historyGrid');
       if (!grid) {
-        // Replace empty state with grid
         const emptyEl = document.querySelector('.border-dashed');
         if (emptyEl) {
           const container = emptyEl.parentElement;
@@ -256,6 +426,7 @@
       if (!grid) return;
 
       const today = new Date().toISOString().slice(0, 10);
+      const label = isWifi ? data.ssid : data.target_url;
       const card = document.createElement('div');
       card.className = 'bg-white border border-gray-200 rounded-2xl p-5 flex gap-4 items-start hover:shadow-md transition';
       card.innerHTML = `
@@ -263,13 +434,14 @@
              class="w-16 h-16 rounded-lg border border-gray-100 flex-shrink-0 cursor-pointer"
              onclick="window.open('${data.image_url}', '_blank')" />
         <div class="flex-1 min-w-0">
-          <p class="text-sm text-gray-800 font-medium truncate" title="${data.target_url}">${data.target_url}</p>
+          ${isWifi ? '<div class="flex items-center gap-1.5 mb-0.5"><span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">WiFi</span></div>' : ''}
+          <p class="text-sm text-gray-800 font-medium truncate" title="${label}">${label}</p>
           <p class="text-xs text-gray-400 mt-0.5">${today}</p>
           <div class="flex gap-2 mt-3">
-            <button onclick="copyText('${data.target_url}', this)"
+            ${!isWifi ? `<button onclick="copyText('${data.target_url}', this)"
                     class="text-xs border border-gray-200 px-2 py-1 rounded-md text-gray-600 hover:bg-gray-50 transition">
               Copy URL
-            </button>
+            </button>` : ''}
             <a href="${data.image_url}" download="${data.file_name}"
                class="text-xs border border-indigo-200 px-2 py-1 rounded-md text-indigo-600 hover:bg-indigo-50 transition">
               Download
@@ -279,9 +451,9 @@
       grid.prepend(card);
     }
 
-    function copyUrl() {
-      if (!currentUrl) return;
-      navigator.clipboard.writeText(currentUrl).then(() => {
+    function copyResult() {
+      if (!currentResultValue) return;
+      navigator.clipboard.writeText(currentResultValue).then(() => {
         const btn = document.getElementById('copyBtnText');
         btn.textContent = 'Copied!';
         setTimeout(() => { btn.textContent = 'Copy URL'; }, 2000);
@@ -300,12 +472,12 @@
       if (!currentQrDataUrl) return;
       const a = document.createElement('a');
       a.href = currentQrDataUrl;
-      const domain = currentUrl ? new URL(currentUrl.startsWith('http') ? currentUrl : 'http://' + currentUrl).hostname : 'qr';
-      a.download = `qr_${domain}.png`;
+      a.download = currentFileName || 'qr.png';
       a.click();
     }
 
-    // API Key
+    // ── API Key ───────────────────────────────────────────────────────────────
+
     async function generateApiKey() {
       const btn = document.getElementById('genKeyBtn');
       btn.disabled = true;
@@ -317,14 +489,13 @@
 
         let display = document.getElementById('apiKeyDisplay');
         if (!display) {
-          // First time - rebuild the key section; easiest to reload
           window.location.reload();
           return;
         }
         display.value = data.api_key;
         display.type = 'text';
         document.getElementById('toggleBtn').textContent = 'Hide';
-        document.getElementById('copyKeyBtn') && copyApiKey(data.api_key);
+        copyApiKey(data.api_key);
         btn.textContent = 'Regenerate API Key';
       } catch {
         btn.textContent = 'Error – try again';

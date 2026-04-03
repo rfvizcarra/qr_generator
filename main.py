@@ -242,6 +242,55 @@ async def generate_qr_save(request: Request):
     }
 
 
+@app.post("/api/generate/wifi")
+async def generate_qr_wifi(request: Request):
+    """Authenticated – generates a WiFi QR code, saves to Supabase."""
+    user = get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    body = await request.json()
+    ssid = body.get("ssid", "").strip()
+    password = body.get("password", "").strip()
+    auth = body.get("auth", "WPA").strip()
+    hidden = body.get("hidden", False)
+
+    if not ssid:
+        raise HTTPException(status_code=400, detail="SSID is required")
+    if auth not in ("WPA", "WEP", "nopass"):
+        raise HTTPException(status_code=400, detail="Invalid security type")
+
+    hidden_str = "true" if hidden else "false"
+    wifi_string = f"WIFI:T:{auth};S:{ssid};P:{password};H:{hidden_str};;"
+
+    img_bytes = make_qr_bytes(wifi_string)
+    safe_ssid = "".join(c if c.isalnum() else "_" for c in ssid)
+    filename = f"wifi_{safe_ssid}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+    storage_path = f"generated/{filename}"
+
+    supabase.storage.from_("qr-codes").upload(
+        path=storage_path,
+        file=img_bytes,
+        file_options={"content-type": "image/png"},
+    )
+    public_url = supabase.storage.from_("qr-codes").get_public_url(storage_path)
+
+    supabase.table("qr_codes").insert({
+        "user_id": user["id"],
+        "target_url": wifi_string,
+        "file_name": filename,
+        "image_url": public_url,
+    }).execute()
+
+    return {
+        "image": base64.b64encode(img_bytes).decode(),
+        "image_url": public_url,
+        "target_url": wifi_string,
+        "file_name": filename,
+        "ssid": ssid,
+    }
+
+
 # ─── API Key Management ───────────────────────────────────────────────────────
 
 @app.post("/api/keys/generate")
