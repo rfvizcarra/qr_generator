@@ -257,6 +257,50 @@ async def generate_qr_save(request: Request):
     }
 
 
+@app.post("/api/generate/text")
+async def generate_qr_text(request: Request):
+    """Authenticated – generates a plain-text QR code, saves to Supabase."""
+    user = get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    check_qr_limit(user["id"])
+
+    body = await request.json()
+    text = body.get("text", "").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Text is required")
+    if len(text) > 500:
+        raise HTTPException(status_code=400, detail="Text must be 500 characters or fewer")
+
+    img_bytes = make_qr_bytes(text)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"text_{timestamp}.png"
+    storage_path = f"generated/{filename}"
+
+    supabase.storage.from_("qr-codes").upload(
+        path=storage_path,
+        file=img_bytes,
+        file_options={"content-type": "image/png"},
+    )
+    public_url = supabase.storage.from_("qr-codes").get_public_url(storage_path)
+
+    insert_result = supabase.table("qr_codes").insert({
+        "user_id": user["id"],
+        "target_url": text,
+        "file_name": filename,
+        "image_url": public_url,
+    }).execute()
+
+    return {
+        "id": insert_result.data[0]["id"],
+        "image": base64.b64encode(img_bytes).decode(),
+        "image_url": public_url,
+        "target_url": text,
+        "file_name": filename,
+    }
+
+
 @app.post("/api/generate/wifi")
 async def generate_qr_wifi(request: Request):
     """Authenticated – generates a WiFi QR code, saves to Supabase."""
