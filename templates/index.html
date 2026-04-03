@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Code Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .tab-active { border-bottom: 2px solid #6366f1; color: #6366f1; font-weight: 600; }
+    .tab-inactive { border-bottom: 2px solid transparent; color: #6b7280; }
+    .tab-inactive:hover { color: #374151; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+
+  <!-- Navbar -->
+  <nav class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+          </svg>
+        </div>
+        <span class="text-lg font-bold text-gray-900">QR Generator</span>
+      </div>
+      <div class="flex items-center gap-3">
+        {% if user %}
+          <span class="text-sm text-gray-500">{{ user.email }}</span>
+          <a href="/dashboard"
+             class="text-sm font-medium text-indigo-600 hover:text-indigo-700">Dashboard</a>
+          <a href="/auth/logout"
+             class="text-sm bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition">Logout</a>
+        {% else %}
+          <button onclick="openModal('login')"
+                  class="text-sm font-medium text-gray-700 hover:text-indigo-600 transition">Sign In</button>
+          <button onclick="openModal('register')"
+                  class="text-sm bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">Register</button>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+
+  <!-- Alert banner -->
+  {% if error %}
+  <div class="max-w-5xl mx-auto px-4 mt-4">
+    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex justify-between">
+      <span>{{ error }}</span>
+      <button onclick="this.parentElement.remove()" class="ml-4 font-bold">&times;</button>
+    </div>
+  </div>
+  {% endif %}
+  {% if message %}
+  <div class="max-w-5xl mx-auto px-4 mt-4">
+    <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm flex justify-between">
+      <span>{{ message }}</span>
+      <button onclick="this.parentElement.remove()" class="ml-4 font-bold">&times;</button>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Hero -->
+  <main class="max-w-5xl mx-auto px-4 py-12">
+    <div class="text-center mb-10">
+      <h1 class="text-4xl font-bold text-gray-900 mb-3">Generate QR Codes Instantly</h1>
+      <p class="text-gray-500 text-lg">Free, fast, no sign-up required.</p>
+      {% if not user %}
+      <p class="text-gray-500 text-lg mt-1">
+        <span onclick="openModal('register')" class="text-indigo-600 hover:underline font-medium cursor-pointer">Create an account</span>
+        to save your codes and access the API.
+      </p>
+      {% endif %}
+    </div>
+
+    <!-- Generator card -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
+      <div class="flex flex-col sm:flex-row gap-3">
+        <input id="urlInput" type="text" value="http://"
+               class="flex-1 border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+               placeholder="https://example.com"
+               onkeydown="if(event.key==='Enter') generateQR()" />
+        <button onclick="generateQR()" id="generateBtn"
+                class="bg-indigo-600 text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-indigo-700 active:scale-95 transition flex items-center gap-2 justify-center">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+          </svg>
+          Generate
+        </button>
+      </div>
+
+      <!-- Error message -->
+      <p id="urlError" class="text-red-500 text-xs mt-2 hidden"></p>
+
+      <!-- Result -->
+      <div id="result" class="hidden mt-8 flex flex-col sm:flex-row gap-8 items-center">
+        <div class="flex-shrink-0">
+          <img id="qrImage" src="" alt="QR Code"
+               class="w-48 h-48 rounded-xl border border-gray-200 shadow-sm" />
+        </div>
+        <div class="flex flex-col gap-3 flex-1">
+          <div class="bg-gray-50 rounded-lg px-4 py-3 text-sm text-gray-700 break-all" id="displayUrl"></div>
+          <div class="flex gap-3 flex-wrap">
+            <button onclick="downloadQR()"
+                    class="flex items-center gap-2 bg-indigo-50 text-indigo-700 border border-indigo-200 px-4 py-2 rounded-lg text-sm hover:bg-indigo-100 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+              </svg>
+              Download QR
+            </button>
+          </div>
+          <p class="text-xs text-gray-400">This QR code is not saved.
+            {% if not user %}
+            <span onclick="openModal('register')" class="text-indigo-500 hover:underline cursor-pointer">Sign up</span> to save your codes.
+            {% endif %}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Features -->
+    {% if not user %}
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
+      <div class="bg-white border border-gray-200 rounded-2xl p-6 text-center">
+        <div class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+          <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold text-gray-800 mb-1">Save History</h3>
+        <p class="text-sm text-gray-500">All your QR codes stored and accessible anytime.</p>
+      </div>
+      <div class="bg-white border border-gray-200 rounded-2xl p-6 text-center">
+        <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+          <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold text-gray-800 mb-1">API Access</h3>
+        <p class="text-sm text-gray-500">Generate QR codes programmatically with your API key.</p>
+      </div>
+      <div class="bg-white border border-gray-200 rounded-2xl p-6 text-center">
+        <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+          <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold text-gray-800 mb-1">Always Free</h3>
+        <p class="text-sm text-gray-500">No credit card required. Get started in seconds.</p>
+      </div>
+    </div>
+    {% endif %}
+  </main>
+
+  <!-- Auth Modal -->
+  <div id="authModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md relative">
+      <button onclick="closeModal()"
+              class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+
+      <!-- Tabs -->
+      <div class="flex border-b border-gray-200 px-6 pt-6 gap-6">
+        <button id="loginTab" onclick="switchTab('login')"
+                class="pb-3 text-sm transition tab-active">Sign In</button>
+        <button id="registerTab" onclick="switchTab('register')"
+                class="pb-3 text-sm transition tab-inactive">Register</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="loginForm" action="/auth/login" method="post" class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <input type="email" name="email" required
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                 placeholder="you@example.com" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+          <input type="password" name="password" required
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                 placeholder="••••••••" />
+        </div>
+        <button type="submit"
+                class="w-full bg-indigo-600 text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">
+          Sign In
+        </button>
+        <p class="text-center text-sm text-gray-500">
+          No account? <span onclick="switchTab('register')" class="text-indigo-600 hover:underline cursor-pointer">Register</span>
+        </p>
+      </form>
+
+      <!-- Register Form -->
+      <form id="registerForm" action="/auth/register" method="post" class="p-6 space-y-4 hidden">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <input type="email" name="email" required
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                 placeholder="you@example.com" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+          <input type="password" name="password" required minlength="6"
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                 placeholder="Min. 6 characters" />
+        </div>
+        <button type="submit"
+                class="w-full bg-indigo-600 text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">
+          Create Account
+        </button>
+        <p class="text-center text-sm text-gray-500">
+          Already have an account? <span onclick="switchTab('login')" class="text-indigo-600 hover:underline cursor-pointer">Sign In</span>
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let currentQrDataUrl = null;
+    let currentUrl = null;
+
+    async function generateQR() {
+      const urlInput = document.getElementById('urlInput');
+      const url = urlInput.value.trim();
+      const errorEl = document.getElementById('urlError');
+
+      if (!url || url === 'http://') {
+        errorEl.textContent = 'Please enter a valid URL.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+      errorEl.classList.add('hidden');
+
+      const btn = document.getElementById('generateBtn');
+      btn.disabled = true;
+      btn.textContent = 'Generating...';
+
+      try {
+        const resp = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
+        if (!resp.ok) throw new Error((await resp.json()).detail || 'Error');
+        const data = await resp.json();
+
+        currentUrl = url;
+        currentQrDataUrl = 'data:image/png;base64,' + data.image;
+
+        document.getElementById('qrImage').src = currentQrDataUrl;
+        document.getElementById('displayUrl').textContent = url;
+        document.getElementById('result').classList.remove('hidden');
+      } catch (err) {
+        errorEl.textContent = err.message;
+        errorEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+          </svg>
+          Generate`;
+      }
+    }
+
+    function copyUrl() {
+      if (!currentUrl) return;
+      navigator.clipboard.writeText(currentUrl).then(() => {
+        const btn = document.getElementById('copyBtnText');
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy URL'; }, 2000);
+      });
+    }
+
+    function downloadQR() {
+      if (!currentQrDataUrl) return;
+      const a = document.createElement('a');
+      a.href = currentQrDataUrl;
+      const domain = currentUrl ? new URL(currentUrl.startsWith('http') ? currentUrl : 'http://' + currentUrl).hostname : 'qr';
+      a.download = `qr_${domain}.png`;
+      a.click();
+    }
+
+    // Modal
+    function openModal(tab) {
+      switchTab(tab);
+      document.getElementById('authModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('authModal').classList.add('hidden');
+    }
+
+    function switchTab(tab) {
+      const loginForm = document.getElementById('loginForm');
+      const registerForm = document.getElementById('registerForm');
+      const loginTab = document.getElementById('loginTab');
+      const registerTab = document.getElementById('registerTab');
+
+      if (tab === 'login') {
+        loginForm.classList.remove('hidden');
+        registerForm.classList.add('hidden');
+        loginTab.className = 'pb-3 text-sm transition tab-active';
+        registerTab.className = 'pb-3 text-sm transition tab-inactive';
+      } else {
+        loginForm.classList.add('hidden');
+        registerForm.classList.remove('hidden');
+        loginTab.className = 'pb-3 text-sm transition tab-inactive';
+        registerTab.className = 'pb-3 text-sm transition tab-active';
+      }
+    }
+
+    // Close modal on backdrop click
+    document.getElementById('authModal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+
+    // If there's an error on page load, open the modal
+    {% if error and not user %}
+    // Could open modal on error; handled by banner instead
+    {% endif %}
+  </script>
+</body>
+</html>

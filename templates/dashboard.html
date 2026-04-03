@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard – QR Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+
+  <!-- Navbar -->
+  <nav class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+          </svg>
+        </div>
+        <a href="/" class="text-lg font-bold text-gray-900">QR Generator</a>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="text-sm text-gray-500 hidden sm:block">{{ user.email }}</span>
+        <a href="/" class="text-sm text-gray-600 hover:text-indigo-600 transition">Home</a>
+        <a href="/auth/logout"
+           class="text-sm bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-6xl mx-auto px-4 py-10 space-y-10">
+
+    <!-- Page header -->
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+      <p class="text-gray-500 text-sm mt-1">Generate and manage your QR codes.</p>
+    </div>
+
+    <!-- Generator card -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+      <h2 class="text-base font-semibold text-gray-800 mb-4">Generate a New QR Code</h2>
+      <div class="flex flex-col sm:flex-row gap-3">
+        <input id="urlInput" type="text" value="http://"
+               class="flex-1 border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+               placeholder="https://example.com"
+               onkeydown="if(event.key==='Enter') generateQR()" />
+        <button onclick="generateQR()" id="generateBtn"
+                class="bg-indigo-600 text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-indigo-700 active:scale-95 transition flex items-center gap-2 justify-center">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+          </svg>
+          Generate &amp; Save
+        </button>
+      </div>
+      <p id="urlError" class="text-red-500 text-xs mt-2 hidden"></p>
+
+      <!-- Result -->
+      <div id="result" class="hidden mt-8 flex flex-col sm:flex-row gap-8 items-center">
+        <div class="flex-shrink-0">
+          <img id="qrImage" src="" alt="QR Code"
+               class="w-48 h-48 rounded-xl border border-gray-200 shadow-sm" />
+        </div>
+        <div class="flex flex-col gap-3 flex-1">
+          <div class="bg-gray-50 rounded-lg px-4 py-3 text-sm text-gray-700 break-all" id="displayUrl"></div>
+          <div class="flex gap-3 flex-wrap">
+            <button onclick="copyUrl()"
+                    class="flex items-center gap-2 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-50 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+              </svg>
+              <span id="copyBtnText">Copy URL</span>
+            </button>
+            <button onclick="downloadQR()"
+                    class="flex items-center gap-2 bg-indigo-50 text-indigo-700 border border-indigo-200 px-4 py-2 rounded-lg text-sm hover:bg-indigo-100 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+              </svg>
+              Download QR
+            </button>
+          </div>
+          <p class="text-xs text-green-600 font-medium">Saved to your history.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- QR History -->
+    <div>
+      <h2 class="text-base font-semibold text-gray-800 mb-4">Your QR Codes
+        <span class="text-gray-400 font-normal text-sm ml-1">({{ qr_codes|length }})</span>
+      </h2>
+
+      {% if qr_codes %}
+      <div id="historyGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for qr in qr_codes %}
+        <div class="bg-white border border-gray-200 rounded-2xl p-5 flex gap-4 items-start hover:shadow-md transition">
+          <img src="{{ qr.image_url }}" alt="QR"
+               class="w-16 h-16 rounded-lg border border-gray-100 flex-shrink-0 cursor-pointer"
+               onclick="window.open('{{ qr.image_url }}', '_blank')" />
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-gray-800 font-medium truncate" title="{{ qr.target_url }}">{{ qr.target_url }}</p>
+            <p class="text-xs text-gray-400 mt-0.5">
+              {{ qr.created_at[:10] if qr.created_at else '' }}
+            </p>
+            <div class="flex gap-2 mt-3">
+              <button onclick="copyText('{{ qr.target_url }}', this)"
+                      class="text-xs border border-gray-200 px-2 py-1 rounded-md text-gray-600 hover:bg-gray-50 transition">
+                Copy URL
+              </button>
+              <a href="{{ qr.image_url }}" download="{{ qr.file_name }}"
+                 class="text-xs border border-indigo-200 px-2 py-1 rounded-md text-indigo-600 hover:bg-indigo-50 transition">
+                Download
+              </a>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="bg-white border border-dashed border-gray-300 rounded-2xl p-12 text-center text-gray-400">
+        <svg class="w-10 h-10 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+        </svg>
+        <p class="text-sm">No QR codes yet. Generate your first one above!</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- API Access -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-base font-semibold text-gray-800">API Access</h2>
+        <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">Developer</span>
+      </div>
+      <p class="text-sm text-gray-500 mb-6">Use your API key to generate QR codes programmatically from any app.</p>
+
+      <!-- Current key -->
+      <div class="mb-6">
+        <label class="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Your API Key</label>
+        {% if api_key %}
+        <div class="flex gap-2">
+          <div class="flex-1 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5">
+            <input id="apiKeyDisplay" type="password" value="{{ api_key }}" readonly
+                   class="flex-1 bg-transparent text-sm font-mono text-gray-800 outline-none" />
+            <button onclick="toggleKey()" class="text-xs text-gray-400 hover:text-gray-600 transition" id="toggleBtn">Show</button>
+          </div>
+          <button onclick="copyApiKey()"
+                  class="border border-gray-200 px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition" id="copyKeyBtn">
+            Copy
+          </button>
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-400 italic">No API key yet. Generate one below.</p>
+        {% endif %}
+      </div>
+
+      <button onclick="generateApiKey()" id="genKeyBtn"
+              class="border border-gray-300 text-gray-700 px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 transition">
+        {% if api_key %}Regenerate API Key{% else %}Generate API Key{% endif %}
+      </button>
+      {% if api_key %}
+      <p class="text-xs text-amber-600 mt-2">Regenerating will invalidate your current key.</p>
+      {% endif %}
+
+      <!-- API Docs -->
+      <div class="mt-8 border-t border-gray-100 pt-6">
+        <h3 class="text-sm font-semibold text-gray-700 mb-3">How to use the API</h3>
+        <div class="bg-gray-900 rounded-xl p-4 text-xs font-mono text-gray-200 overflow-x-auto leading-relaxed">
+          <span class="text-gray-500"># POST request to generate a QR code</span><br/>
+          curl -X POST https://your-domain.com/api/v1/generate \<br/>
+          &nbsp;&nbsp;-H <span class="text-green-400">"Content-Type: application/json"</span> \<br/>
+          &nbsp;&nbsp;-H <span class="text-green-400">"X-Api-Key: YOUR_API_KEY"</span> \<br/>
+          &nbsp;&nbsp;-d <span class="text-yellow-400">'{"url": "https://example.com"}'</span>
+          <br/><br/>
+          <span class="text-gray-500"># Response</span><br/>
+          {<br/>
+          &nbsp;&nbsp;<span class="text-blue-400">"status"</span>: <span class="text-green-400">"success"</span>,<br/>
+          &nbsp;&nbsp;<span class="text-blue-400">"image_url"</span>: <span class="text-green-400">"https://..."</span>,<br/>
+          &nbsp;&nbsp;<span class="text-blue-400">"target_url"</span>: <span class="text-green-400">"https://example.com"</span><br/>
+          }
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    let currentQrDataUrl = null;
+    let currentUrl = null;
+
+    async function generateQR() {
+      const urlInput = document.getElementById('urlInput');
+      const url = urlInput.value.trim();
+      const errorEl = document.getElementById('urlError');
+
+      if (!url || url === 'http://') {
+        errorEl.textContent = 'Please enter a valid URL.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+      errorEl.classList.add('hidden');
+
+      const btn = document.getElementById('generateBtn');
+      btn.disabled = true;
+      btn.textContent = 'Generating...';
+
+      try {
+        const resp = await fetch('/api/generate/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
+        if (!resp.ok) throw new Error((await resp.json()).detail || 'Error');
+        const data = await resp.json();
+
+        currentUrl = url;
+        currentQrDataUrl = 'data:image/png;base64,' + data.image;
+
+        document.getElementById('qrImage').src = currentQrDataUrl;
+        document.getElementById('displayUrl').textContent = url;
+        document.getElementById('result').classList.remove('hidden');
+
+        // Prepend new card to history grid
+        addToHistoryGrid(data);
+      } catch (err) {
+        errorEl.textContent = err.message;
+        errorEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+          </svg>
+          Generate &amp; Save`;
+      }
+    }
+
+    function addToHistoryGrid(data) {
+      let grid = document.getElementById('historyGrid');
+      if (!grid) {
+        // Replace empty state with grid
+        const emptyEl = document.querySelector('.border-dashed');
+        if (emptyEl) {
+          const container = emptyEl.parentElement;
+          grid = document.createElement('div');
+          grid.id = 'historyGrid';
+          grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4';
+          container.replaceChild(grid, emptyEl);
+        }
+      }
+      if (!grid) return;
+
+      const today = new Date().toISOString().slice(0, 10);
+      const card = document.createElement('div');
+      card.className = 'bg-white border border-gray-200 rounded-2xl p-5 flex gap-4 items-start hover:shadow-md transition';
+      card.innerHTML = `
+        <img src="${data.image_url}" alt="QR"
+             class="w-16 h-16 rounded-lg border border-gray-100 flex-shrink-0 cursor-pointer"
+             onclick="window.open('${data.image_url}', '_blank')" />
+        <div class="flex-1 min-w-0">
+          <p class="text-sm text-gray-800 font-medium truncate" title="${data.target_url}">${data.target_url}</p>
+          <p class="text-xs text-gray-400 mt-0.5">${today}</p>
+          <div class="flex gap-2 mt-3">
+            <button onclick="copyText('${data.target_url}', this)"
+                    class="text-xs border border-gray-200 px-2 py-1 rounded-md text-gray-600 hover:bg-gray-50 transition">
+              Copy URL
+            </button>
+            <a href="${data.image_url}" download="${data.file_name}"
+               class="text-xs border border-indigo-200 px-2 py-1 rounded-md text-indigo-600 hover:bg-indigo-50 transition">
+              Download
+            </a>
+          </div>
+        </div>`;
+      grid.prepend(card);
+    }
+
+    function copyUrl() {
+      if (!currentUrl) return;
+      navigator.clipboard.writeText(currentUrl).then(() => {
+        const btn = document.getElementById('copyBtnText');
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy URL'; }, 2000);
+      });
+    }
+
+    function copyText(text, btn) {
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = orig; }, 2000);
+      });
+    }
+
+    function downloadQR() {
+      if (!currentQrDataUrl) return;
+      const a = document.createElement('a');
+      a.href = currentQrDataUrl;
+      const domain = currentUrl ? new URL(currentUrl.startsWith('http') ? currentUrl : 'http://' + currentUrl).hostname : 'qr';
+      a.download = `qr_${domain}.png`;
+      a.click();
+    }
+
+    // API Key
+    async function generateApiKey() {
+      const btn = document.getElementById('genKeyBtn');
+      btn.disabled = true;
+      btn.textContent = 'Generating...';
+      try {
+        const resp = await fetch('/api/keys/generate', { method: 'POST' });
+        if (!resp.ok) throw new Error('Failed');
+        const data = await resp.json();
+
+        let display = document.getElementById('apiKeyDisplay');
+        if (!display) {
+          // First time - rebuild the key section; easiest to reload
+          window.location.reload();
+          return;
+        }
+        display.value = data.api_key;
+        display.type = 'text';
+        document.getElementById('toggleBtn').textContent = 'Hide';
+        document.getElementById('copyKeyBtn') && copyApiKey(data.api_key);
+        btn.textContent = 'Regenerate API Key';
+      } catch {
+        btn.textContent = 'Error – try again';
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function toggleKey() {
+      const input = document.getElementById('apiKeyDisplay');
+      const btn = document.getElementById('toggleBtn');
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = 'Hide';
+      } else {
+        input.type = 'password';
+        btn.textContent = 'Show';
+      }
+    }
+
+    function copyApiKey(val) {
+      const key = val || document.getElementById('apiKeyDisplay')?.value;
+      if (!key) return;
+      navigator.clipboard.writeText(key).then(() => {
+        const btn = document.getElementById('copyKeyBtn');
+        if (btn) {
+          btn.textContent = 'Copied!';
+          setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+        }
+      });
+    }
+  </script>
+</body>
+</html>
