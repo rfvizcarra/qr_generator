@@ -41,6 +41,15 @@
     <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
       <h2 class="text-base font-semibold text-gray-800 mb-4">Generate a New QR Code</h2>
 
+      <!-- Limit banner -->
+      <div id="limitBanner" class="hidden mb-4 flex items-start gap-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 text-sm">
+        <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        </svg>
+        <span>You've reached the <strong>5 QR code limit</strong>. Delete one from your history below to generate more.</span>
+      </div>
+
       <!-- Tabs -->
       <div class="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit mb-6">
         <button id="tabUrl" onclick="switchTab('url')"
@@ -61,7 +70,7 @@
                  placeholder="https://example.com"
                  onkeydown="if(event.key==='Enter') generateUrlQR()" />
           <button onclick="generateUrlQR()" id="generateBtn"
-                  class="bg-indigo-600 text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-indigo-700 active:scale-95 transition flex items-center gap-2 justify-center">
+                  class="bg-indigo-600 text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-indigo-700 active:scale-95 transition flex items-center gap-2 justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
@@ -106,7 +115,7 @@
         </div>
         <p id="wifiError" class="text-red-500 text-xs mt-2 hidden"></p>
         <button onclick="generateWifiQR()" id="generateWifiBtn"
-                class="mt-4 bg-indigo-600 text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-indigo-700 active:scale-95 transition flex items-center gap-2">
+                class="mt-4 bg-indigo-600 text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-indigo-700 active:scale-95 transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
@@ -148,9 +157,13 @@
 
     <!-- QR History -->
     <div>
-      <h2 class="text-base font-semibold text-gray-800 mb-4">Your QR Codes
-        <span class="text-gray-400 font-normal text-sm ml-1">({{ qr_codes|length }})</span>
-      </h2>
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-base font-semibold text-gray-800">Your QR Codes</h2>
+        <span id="qrCounter" class="text-sm font-medium px-3 py-1 rounded-full
+          {% if qr_codes|length >= 5 %}bg-red-100 text-red-700{% elif qr_codes|length >= 3 %}bg-amber-100 text-amber-700{% else %}bg-gray-100 text-gray-500{% endif %}">
+          {{ qr_codes|length }}/5
+        </span>
+      </div>
 
       {% if qr_codes %}
       <div id="historyGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -159,7 +172,7 @@
         {% if is_wifi %}
           {% set ssid = qr.target_url.split('S:')[1].split(';')[0] if 'S:' in qr.target_url else 'WiFi Network' %}
         {% endif %}
-        <div class="bg-white border border-gray-200 rounded-2xl p-5 flex gap-4 items-start hover:shadow-md transition">
+        <div class="bg-white border border-gray-200 rounded-2xl p-5 flex gap-4 items-start hover:shadow-md transition" data-qr-id="{{ qr.id }}">
           <img src="{{ qr.image_url }}" alt="QR"
                class="w-16 h-16 rounded-lg border border-gray-100 flex-shrink-0 cursor-pointer"
                onclick="window.open('{{ qr.image_url }}', '_blank')" />
@@ -175,7 +188,7 @@
             <p class="text-xs text-gray-400 mt-0.5">
               {{ qr.created_at[:10] if qr.created_at else '' }}
             </p>
-            <div class="flex gap-2 mt-3">
+            <div class="flex gap-2 mt-3 flex-wrap">
               {% if not is_wifi %}
               <button onclick="copyText('{{ qr.target_url }}', this)"
                       class="text-xs border border-gray-200 px-2 py-1 rounded-md text-gray-600 hover:bg-gray-50 transition">
@@ -186,13 +199,21 @@
                  class="text-xs border border-indigo-200 px-2 py-1 rounded-md text-indigo-600 hover:bg-indigo-50 transition">
                 Download
               </a>
+              <button onclick="deleteQR('{{ qr.id }}', this)"
+                      class="text-xs border border-red-200 px-2 py-1 rounded-md text-red-500 hover:bg-red-50 transition flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                Delete
+              </button>
             </div>
           </div>
         </div>
         {% endfor %}
       </div>
       {% else %}
-      <div class="bg-white border border-dashed border-gray-300 rounded-2xl p-12 text-center text-gray-400">
+      <div id="emptyState" class="bg-white border border-dashed border-gray-300 rounded-2xl p-12 text-center text-gray-400">
         <svg class="w-10 h-10 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
             d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
@@ -261,53 +282,61 @@
   </main>
 
   <script>
+    const QR_LIMIT = 5;
+    let qrCount = {{ qr_codes|length }};
     let currentQrDataUrl = null;
     let currentResultValue = null;
     let currentFileName = null;
-    let activeTab = 'url';
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+
+    checkLimit();
+
+    // ── Limit ─────────────────────────────────────────────────────────────────
+
+    function checkLimit() {
+      const atLimit = qrCount >= QR_LIMIT;
+      document.getElementById('limitBanner').classList.toggle('hidden', !atLimit);
+      document.getElementById('generateBtn').disabled = atLimit;
+      document.getElementById('generateWifiBtn').disabled = atLimit;
+      updateCounter();
+    }
+
+    function updateCounter() {
+      const el = document.getElementById('qrCounter');
+      el.textContent = `${qrCount}/${QR_LIMIT}`;
+      el.className = 'text-sm font-medium px-3 py-1 rounded-full ' + (
+        qrCount >= QR_LIMIT ? 'bg-red-100 text-red-700' :
+        qrCount >= 3         ? 'bg-amber-100 text-amber-700' :
+                               'bg-gray-100 text-gray-500'
+      );
+    }
 
     // ── Tab switching ─────────────────────────────────────────────────────────
 
     function switchTab(tab) {
-      activeTab = tab;
       document.getElementById('result').classList.add('hidden');
-
-      const tabUrl = document.getElementById('tabUrl');
-      const tabWifi = document.getElementById('tabWifi');
-      const formUrl = document.getElementById('formUrl');
-      const formWifi = document.getElementById('formWifi');
-
-      if (tab === 'url') {
-        tabUrl.className = 'px-4 py-2 rounded-lg text-sm font-medium transition bg-white text-indigo-700 shadow-sm';
-        tabWifi.className = 'px-4 py-2 rounded-lg text-sm font-medium transition text-gray-500 hover:text-gray-700';
-        formUrl.classList.remove('hidden');
-        formWifi.classList.add('hidden');
-      } else {
-        tabWifi.className = 'px-4 py-2 rounded-lg text-sm font-medium transition bg-white text-indigo-700 shadow-sm';
-        tabUrl.className = 'px-4 py-2 rounded-lg text-sm font-medium transition text-gray-500 hover:text-gray-700';
-        formWifi.classList.remove('hidden');
-        formUrl.classList.add('hidden');
-      }
+      const isUrl = tab === 'url';
+      document.getElementById('tabUrl').className  = `px-4 py-2 rounded-lg text-sm font-medium transition ${isUrl  ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`;
+      document.getElementById('tabWifi').className = `px-4 py-2 rounded-lg text-sm font-medium transition ${!isUrl ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`;
+      document.getElementById('formUrl').classList.toggle('hidden', !isUrl);
+      document.getElementById('formWifi').classList.toggle('hidden', isUrl);
     }
 
     function togglePasswordField() {
       const auth = document.getElementById('wifiAuth').value;
       const pwdInput = document.getElementById('wifiPassword');
       pwdInput.disabled = auth === 'nopass';
-      if (auth === 'nopass') {
-        pwdInput.value = '';
-        pwdInput.classList.add('opacity-40');
-      } else {
-        pwdInput.classList.remove('opacity-40');
-      }
+      pwdInput.classList.toggle('opacity-40', auth === 'nopass');
+      if (auth === 'nopass') pwdInput.value = '';
     }
 
     // ── URL QR ────────────────────────────────────────────────────────────────
 
     async function generateUrlQR() {
+      if (qrCount >= QR_LIMIT) return;
       const url = document.getElementById('urlInput').value.trim();
       const errorEl = document.getElementById('urlError');
-
       if (!url || url === 'https://') {
         errorEl.textContent = 'Please enter a valid URL.';
         errorEl.classList.remove('hidden');
@@ -327,14 +356,17 @@
         });
         if (!resp.ok) throw new Error((await resp.json()).detail || 'Error');
         const data = await resp.json();
-
+        qrCount++;
         showResult(data, url, false);
         addToHistoryGrid(data, false);
+        checkLimit();
       } catch (err) {
         errorEl.textContent = err.message;
         errorEl.classList.remove('hidden');
-      } finally {
         btn.disabled = false;
+      } finally {
+        if (!btn.disabled) return;
+        btn.disabled = qrCount >= QR_LIMIT;
         btn.innerHTML = `
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -347,12 +379,12 @@
     // ── WiFi QR ───────────────────────────────────────────────────────────────
 
     async function generateWifiQR() {
+      if (qrCount >= QR_LIMIT) return;
       const ssid = document.getElementById('wifiSsid').value.trim();
       const password = document.getElementById('wifiPassword').value.trim();
       const auth = document.getElementById('wifiAuth').value;
       const hidden = document.getElementById('wifiHidden').checked;
       const errorEl = document.getElementById('wifiError');
-
       if (!ssid) {
         errorEl.textContent = 'Network name (SSID) is required.';
         errorEl.classList.remove('hidden');
@@ -372,14 +404,17 @@
         });
         if (!resp.ok) throw new Error((await resp.json()).detail || 'Error');
         const data = await resp.json();
-
+        qrCount++;
         showResult(data, ssid, true);
         addToHistoryGrid(data, true);
+        checkLimit();
       } catch (err) {
         errorEl.textContent = err.message;
         errorEl.classList.remove('hidden');
-      } finally {
         btn.disabled = false;
+      } finally {
+        if (!btn.disabled) return;
+        btn.disabled = qrCount >= QR_LIMIT;
         btn.innerHTML = `
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -395,40 +430,32 @@
       currentQrDataUrl = 'data:image/png;base64,' + data.image;
       currentResultValue = isWifi ? null : label;
       currentFileName = data.file_name;
-
       document.getElementById('qrImage').src = currentQrDataUrl;
       document.getElementById('displayLabel').textContent = isWifi ? `WiFi Network: ${label}` : label;
-
       const copyBtn = document.getElementById('copyResultBtn');
-      const copyText = document.getElementById('copyBtnText');
-      if (isWifi) {
-        copyBtn.classList.add('hidden');
-      } else {
-        copyBtn.classList.remove('hidden');
-        copyText.textContent = 'Copy URL';
-      }
-
+      copyBtn.classList.toggle('hidden', isWifi);
+      if (!isWifi) document.getElementById('copyBtnText').textContent = 'Copy URL';
       document.getElementById('result').classList.remove('hidden');
     }
 
     function addToHistoryGrid(data, isWifi) {
       let grid = document.getElementById('historyGrid');
       if (!grid) {
-        const emptyEl = document.querySelector('.border-dashed');
+        const emptyEl = document.getElementById('emptyState');
         if (emptyEl) {
-          const container = emptyEl.parentElement;
           grid = document.createElement('div');
           grid.id = 'historyGrid';
           grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4';
-          container.replaceChild(grid, emptyEl);
+          emptyEl.replaceWith(grid);
         }
       }
       if (!grid) return;
 
-      const today = new Date().toISOString().slice(0, 10);
       const label = isWifi ? data.ssid : data.target_url;
+      const today = new Date().toISOString().slice(0, 10);
       const card = document.createElement('div');
       card.className = 'bg-white border border-gray-200 rounded-2xl p-5 flex gap-4 items-start hover:shadow-md transition';
+      card.dataset.qrId = data.id;
       card.innerHTML = `
         <img src="${data.image_url}" alt="QR"
              class="w-16 h-16 rounded-lg border border-gray-100 flex-shrink-0 cursor-pointer"
@@ -437,19 +464,66 @@
           ${isWifi ? '<div class="flex items-center gap-1.5 mb-0.5"><span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">WiFi</span></div>' : ''}
           <p class="text-sm text-gray-800 font-medium truncate" title="${label}">${label}</p>
           <p class="text-xs text-gray-400 mt-0.5">${today}</p>
-          <div class="flex gap-2 mt-3">
+          <div class="flex gap-2 mt-3 flex-wrap">
             ${!isWifi ? `<button onclick="copyText('${data.target_url}', this)"
-                    class="text-xs border border-gray-200 px-2 py-1 rounded-md text-gray-600 hover:bg-gray-50 transition">
+                class="text-xs border border-gray-200 px-2 py-1 rounded-md text-gray-600 hover:bg-gray-50 transition">
               Copy URL
             </button>` : ''}
             <a href="${data.image_url}" download="${data.file_name}"
                class="text-xs border border-indigo-200 px-2 py-1 rounded-md text-indigo-600 hover:bg-indigo-50 transition">
               Download
             </a>
+            <button onclick="deleteQR('${data.id}', this)"
+                    class="text-xs border border-red-200 px-2 py-1 rounded-md text-red-500 hover:bg-red-50 transition flex items-center gap-1">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+              Delete
+            </button>
           </div>
         </div>`;
       grid.prepend(card);
     }
+
+    // ── Delete ────────────────────────────────────────────────────────────────
+
+    async function deleteQR(id, btn) {
+      btn.disabled = true;
+      btn.textContent = '...';
+      try {
+        const resp = await fetch(`/api/qr/${id}`, { method: 'DELETE' });
+        if (!resp.ok) throw new Error((await resp.json()).detail || 'Error');
+
+        // Remove card from DOM
+        const card = document.querySelector(`[data-qr-id="${id}"]`);
+        if (card) card.remove();
+
+        qrCount--;
+        checkLimit();
+
+        // Show empty state if no cards left
+        const grid = document.getElementById('historyGrid');
+        if (grid && grid.children.length === 0) {
+          const empty = document.createElement('div');
+          empty.id = 'emptyState';
+          empty.className = 'bg-white border border-dashed border-gray-300 rounded-2xl p-12 text-center text-gray-400';
+          empty.innerHTML = `
+            <svg class="w-10 h-10 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+            </svg>
+            <p class="text-sm">No QR codes yet. Generate your first one above!</p>`;
+          grid.replaceWith(empty);
+        }
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'Delete';
+        alert('Failed to delete: ' + err.message);
+      }
+    }
+
+    // ── Misc ──────────────────────────────────────────────────────────────────
 
     function copyResult() {
       if (!currentResultValue) return;
@@ -486,12 +560,8 @@
         const resp = await fetch('/api/keys/generate', { method: 'POST' });
         if (!resp.ok) throw new Error('Failed');
         const data = await resp.json();
-
         let display = document.getElementById('apiKeyDisplay');
-        if (!display) {
-          window.location.reload();
-          return;
-        }
+        if (!display) { window.location.reload(); return; }
         display.value = data.api_key;
         display.type = 'text';
         document.getElementById('toggleBtn').textContent = 'Hide';
@@ -507,13 +577,8 @@
     function toggleKey() {
       const input = document.getElementById('apiKeyDisplay');
       const btn = document.getElementById('toggleBtn');
-      if (input.type === 'password') {
-        input.type = 'text';
-        btn.textContent = 'Hide';
-      } else {
-        input.type = 'password';
-        btn.textContent = 'Show';
-      }
+      input.type = input.type === 'password' ? 'text' : 'password';
+      btn.textContent = input.type === 'password' ? 'Show' : 'Hide';
     }
 
     function copyApiKey(val) {

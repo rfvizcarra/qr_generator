@@ -112,6 +112,18 @@ def get_unique_name(url: str) -> str:
     return f"{domain}_{timestamp}.png"
 
 
+QR_LIMIT = 5
+
+
+def check_qr_limit(user_id: str):
+    result = supabase.table("qr_codes").select("id").eq("user_id", user_id).execute()
+    if len(result.data) >= QR_LIMIT:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Limit reached ({QR_LIMIT} QR codes). Delete one to generate more.",
+        )
+
+
 # ─── Pages ────────────────────────────────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)
@@ -211,6 +223,8 @@ async def generate_qr_save(request: Request):
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
+    check_qr_limit(user["id"])
+
     body = await request.json()
     url = body.get("url", "").strip()
     if not url:
@@ -227,7 +241,7 @@ async def generate_qr_save(request: Request):
     )
     public_url = supabase.storage.from_("qr-codes").get_public_url(storage_path)
 
-    supabase.table("qr_codes").insert({
+    insert_result = supabase.table("qr_codes").insert({
         "user_id": user["id"],
         "target_url": url,
         "file_name": filename,
@@ -235,6 +249,7 @@ async def generate_qr_save(request: Request):
     }).execute()
 
     return {
+        "id": insert_result.data[0]["id"],
         "image": base64.b64encode(img_bytes).decode(),
         "image_url": public_url,
         "target_url": url,
@@ -248,6 +263,8 @@ async def generate_qr_wifi(request: Request):
     user = get_current_user(request)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
+
+    check_qr_limit(user["id"])
 
     body = await request.json()
     ssid = body.get("ssid", "").strip()
@@ -275,7 +292,7 @@ async def generate_qr_wifi(request: Request):
     )
     public_url = supabase.storage.from_("qr-codes").get_public_url(storage_path)
 
-    supabase.table("qr_codes").insert({
+    insert_result = supabase.table("qr_codes").insert({
         "user_id": user["id"],
         "target_url": wifi_string,
         "file_name": filename,
@@ -283,12 +300,37 @@ async def generate_qr_wifi(request: Request):
     }).execute()
 
     return {
+        "id": insert_result.data[0]["id"],
         "image": base64.b64encode(img_bytes).decode(),
         "image_url": public_url,
         "target_url": wifi_string,
         "file_name": filename,
         "ssid": ssid,
     }
+
+
+# ─── QR Delete ────────────────────────────────────────────────────────────────
+
+@app.delete("/api/qr/{qr_id}")
+async def delete_qr(qr_id: str, request: Request):
+    user = get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    result = supabase.table("qr_codes").select("file_name, user_id").eq("id", qr_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="QR code not found")
+    if result.data[0]["user_id"] != user["id"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    file_name = result.data[0]["file_name"]
+    try:
+        supabase.storage.from_("qr-codes").remove([f"generated/{file_name}"])
+    except Exception:
+        pass  # Continue even if storage delete fails
+
+    supabase.table("qr_codes").delete().eq("id", qr_id).execute()
+    return {"status": "deleted"}
 
 
 # ─── API Key Management ───────────────────────────────────────────────────────
