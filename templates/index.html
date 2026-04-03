@@ -76,10 +76,11 @@
     <!-- Generator card -->
     <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
       <div class="flex flex-col sm:flex-row gap-3">
-        <input id="urlInput" type="text" value="http://"
+        <input id="urlInput" type="text" value="https://"
                class="flex-1 border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
                placeholder="https://example.com"
                onkeydown="if(event.key==='Enter') generateQR()" />
+
         <button onclick="generateQR()" id="generateBtn"
                 class="bg-indigo-600 text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-indigo-700 active:scale-95 transition flex items-center gap-2 justify-center">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
