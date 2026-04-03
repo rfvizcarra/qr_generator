@@ -13,6 +13,7 @@ from supabase import create_client
 from datetime import datetime
 from urllib.parse import urlparse
 from dotenv import load_dotenv
+from mcp.server.fastmcp import FastMCP
 
 load_dotenv()
 
@@ -25,6 +26,71 @@ app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key=session_secret)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+# ─── MCP Server ───────────────────────────────────────────────────────────────
+
+mcp = FastMCP(
+    name="QR Code Generator",
+    instructions=(
+        "Generate QR codes from URLs. "
+        "Use your API key (obtained from the dashboard) to authenticate. "
+        "Generated QR codes are saved to your account history."
+    ),
+)
+
+
+@mcp.tool()
+def generate_qr(url: str, api_key: str) -> dict:
+    """Generate a QR code for a URL and save it to the user's account.
+
+    Args:
+        url: The URL to encode in the QR code (must start with http:// or https://).
+        api_key: Your QR Generator API key from the dashboard (starts with 'qr_').
+
+    Returns:
+        A dict with image_url (public URL of the QR image) and target_url.
+    """
+    if not url or not url.strip():
+        raise ValueError("url is required")
+
+    url = url.strip()
+
+    # Validate API key against Supabase
+    key_data = (
+        supabase.table("api_keys")
+        .select("user_id")
+        .eq("api_key", api_key)
+        .eq("is_active", True)
+        .execute()
+    )
+    if not key_data.data:
+        raise ValueError("Invalid or inactive API key")
+
+    user_id = key_data.data[0]["user_id"]
+
+    # Generate QR
+    img_bytes = make_qr_bytes(url)
+    filename = get_unique_name(url)
+    storage_path = f"generated/{filename}"
+
+    supabase.storage.from_("qr-codes").upload(
+        path=storage_path,
+        file=img_bytes,
+        file_options={"content-type": "image/png"},
+    )
+    public_url = supabase.storage.from_("qr-codes").get_public_url(storage_path)
+
+    supabase.table("qr_codes").insert({
+        "user_id": user_id,
+        "target_url": url,
+        "file_name": filename,
+        "image_url": public_url,
+    }).execute()
+
+    return {"image_url": public_url, "target_url": url}
+
+
+app.mount("/mcp", mcp.streamable_http_app())
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
